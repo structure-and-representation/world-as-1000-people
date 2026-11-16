@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-const N=1000, YEARS=DATA.years;
+const YEARS=DATA.years, N=DATA.cells[YEARS[0]].length, ABS=90; /* N = most balls any year needs; ABS = ball absent this year */
 const DIMS={
   reg:{name:"地域",cats:["アジア","アフリカ","ヨーロッパ","中南米","北米","オセアニア"],of:c=>Math.floor(c/15),
        light:["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#008300"],dark:["#3987e5","#d95926","#199e70","#c98500","#d55181","#0ca30c"]},
@@ -28,7 +28,7 @@ balls.instanceMatrix.setUsage(THREE.DynamicDrawUsage);balls.frustumCulled=false;
 const frame=new THREE.Group();scene.add(frame);
 
 const cur=new Float32Array(N*3),from=new Float32Array(N*3),to=new Float32Array(N*3),t0=new Float32Array(N),dur=new Float32Array(N);
-const binOf=new Int16Array(N),jit=new Float32Array(N*3),pour=new Uint8Array(N),prev=new Float32Array(N*3);
+const binOf=new Int16Array(N),jit=new Float32Array(N*3),pour=new Uint8Array(N),prev=new Float32Array(N*3),sc=new Float32Array(N),act=new Uint8Array(N);
 let phase="",spillEnd=0,apexY=10,clampR=40;
 for(let i=0;i<N*3;i++)jit[i]=(Math.sin(i*12.9898)*43758.5453%1)*0.07;
 let bins=[],labels=[],moving=false,dirty=true,clock=0;
@@ -40,8 +40,10 @@ function layout(mode){
   const cell=cells[state.year],X=catsOf(state.x),Z=catsOf(state.z),nx=X.length,nz=Z.length,C=DIMS[state.c];
   bins=[];
   for(let zi=0;zi<nz;zi++)for(let xi=0;xi<nx;xi++)bins.push({xi,zi,ids:[],n:0});
-  for(let i=0;i<N;i++){const c=cell[i];const xi=state.x==="none"?0:DIMS[state.x].of(c),zi=state.z==="none"?0:DIMS[state.z].of(c);const b=zi*nx+xi;binOf[i]=b;bins[b].ids.push(i);}
-  const maxN=Math.max.apply(null,bins.map(b=>b.ids.length));
+  const binIx=c=>(state.z==="none"?0:DIMS[state.z].of(c))*nx+(state.x==="none"?0:DIMS[state.x].of(c));
+  for(let i=0;i<N;i++){const c=cell[i];if(c>=ABS){binOf[i]=-1;continue;}const b=binIx(c);binOf[i]=b;bins[b].ids.push(i);}
+  /* footprint and frame height come from the largest group in ANY year, so tube heights compare across years */
+  let maxN=1;YEARS.forEach(y=>{const k=new Uint16Array(nx*nz),cy=cells[y];for(let i=0;i<N;i++)if(cy[i]<ABS)k[binIx(cy[i])]++;for(let j=0;j<k.length;j++)if(k[j]>maxN)maxN=k[j];});
   const s=(nx*nz===1)?10:Math.max(3,Math.ceil(Math.sqrt(maxN/12)));
   const pitch=s+1.6,H=Math.ceil(maxN/(s*s));
   const now=clock;apexY=H+3;clampR=Math.hypot(nx*pitch,nz*pitch)*0.5+6;
@@ -51,13 +53,19 @@ function layout(mode){
     b.ids.forEach((id,k)=>{
       const L=Math.floor(k/(s*s)),r=Math.floor((k%(s*s))/s),col=k%s,o=id*3;
       to[o]=b.cx+col-(s-1)/2+jit[o];to[o+1]=L+0.5+jit[o+1]*0.5;to[o+2]=b.cz+r-(s-1)/2+jit[o+2];
-      if(first||reduce){cur[o]=to[o];cur[o+1]=to[o+1];cur[o+2]=to[o+2];dur[id]=0;}
+      if(first||reduce){cur[o]=to[o];cur[o+1]=to[o+1];cur[o+2]=to[o+2];dur[id]=0;sc[id]=1;}
+      else if(sc[id]<0.5){/* new ball this year: drops in from above its slot */
+        from[o]=cur[o]=to[o];from[o+1]=cur[o+1]=apexY+1.5+Math.abs(jit[o+1])*30;from[o+2]=cur[o+2]=to[o+2];
+        pour[id]=2;t0[id]=now+0.25+L*0.05+Math.abs(jit[o])*5;dur[id]=0.7;}
       else{from[o]=cur[o];from[o+1]=cur[o+1];from[o+2]=cur[o+2];
         const d=Math.hypot(to[o]-cur[o],to[o+1]-cur[o+1],to[o+2]-cur[o+2]);
         if(mode==="pour"){pour[id]=1;t0[id]=now+L*0.075+Math.abs(jit[o])*3;dur[id]=1.0;}
         else{pour[id]=0;if(d<0.01){dur[id]=0;}else{t0[id]=now+Math.abs(jit[o])*6+(d>3?0.12:0);dur[id]=0.55+Math.min(d,30)*0.022;}}}
     });
   });
+  for(let i=0;i<N;i++){if(binOf[i]>=0)continue;
+    if(first||reduce||sc[i]<0.5){sc[i]=0;dur[i]=0;}
+    else{const o=i*3;from[o]=cur[o];from[o+1]=cur[o+1];from[o+2]=cur[o+2];pour[i]=3;t0[i]=now+Math.abs(jit[o])*4;dur[i]=0.4;}}
   moving=!(first||reduce);
   if(!moving)writeAll();
   buildFrame(s,H,nx,nz,pitch);
@@ -72,13 +80,15 @@ function fit(snap){
   cam.gDist=R/Math.sin(Math.min(hv,hh))*(state.z==="none"?1.04:1.17);cam.gTy=H*0.42;
   if(snap){cam.dist=cam.gDist;cam.ty=cam.gTy;}
 }
-function writeAll(){for(let i=0;i<N;i++){M.makeTranslation(cur[i*3],cur[i*3+1],cur[i*3+2]);balls.setMatrixAt(i,M);}balls.instanceMatrix.needsUpdate=true;}
+function writeAll(){for(let i=0;i<N;i++){const k=sc[i];M.makeScale(k,k,k);M.setPosition(cur[i*3],cur[i*3+1],cur[i*3+2]);balls.setMatrixAt(i,M);}balls.instanceMatrix.needsUpdate=true;}
 function step(){
   let any=false,land=-1,landPour=false;
   for(let i=0;i<N;i++){
     if(dur[i]<=0)continue;const o=i*3;let u=(clock-t0[i])/dur[i];
     if(u<=0){any=true;continue;}
-    if(u>=1){u=1;dur[i]=0;if(land<0||to[o+1]>to[land*3+1]){land=i;landPour=!!pour[i];}}else any=true;
+    if(u>=1){u=1;dur[i]=0;if(pour[i]!==3&&(land<0||to[o+1]>to[land*3+1])){land=i;landPour=!!pour[i];}}else any=true;
+    if(pour[i]===3){sc[i]=1-u;continue;}
+    if(pour[i]===2){sc[i]=1;cur[o+1]=from[o+1]+(to[o+1]-from[o+1])*u*u;continue;}
     if(pour[i]){
       const uh=Math.min(1,u/0.6),eh=1-Math.pow(1-uh,3);
       cur[o]=from[o]+(to[o]-from[o])*eh;cur[o+2]=from[o+2]+(to[o+2]-from[o+2])*eh;
@@ -135,6 +145,7 @@ function startSpill(){
   while(frame.children.length){const o=frame.children.pop();o.geometry.dispose();o.material.dispose();}
   labelBox.textContent="";labels=[];state.sel=-1;detail();
   for(let i=0;i<N;i++){
+    act[i]=(sc[i]>0.5&&binOf[i]>=0)?1:0;if(!act[i]){sc[i]=0;dur[i]=0;continue;}sc[i]=1;
     const o=i*3,b=bins[binOf[i]];let dx=cur[o]-b.cx,dz=cur[o+2]-b.cz,l=Math.hypot(dx,dz);
     if(l<0.3){const a=jit[o]*90;dx=Math.cos(a);dz=Math.sin(a);l=1;}
     const sp=(1.2+cur[o+1]*0.55+Math.abs(jit[o+1])*14)*HS;
@@ -145,15 +156,15 @@ function startSpill(){
 function physics(dt){
   const steps=Math.max(1,Math.min(4,Math.round(dt/HS))),R=DIA/2,g=-34*HS*HS;
   for(let s=0;s<steps;s++){
-    for(let i=0;i<N;i++){const o=i*3;
+    for(let i=0;i<N;i++){if(!act[i])continue;const o=i*3;
       const vx=(cur[o]-prev[o])*0.992,vy=(cur[o+1]-prev[o+1])*0.992,vz=(cur[o+2]-prev[o+2])*0.992;
       prev[o]=cur[o];prev[o+1]=cur[o+1];prev[o+2]=cur[o+2];cur[o]+=vx;cur[o+1]+=vy+g;cur[o+2]+=vz;}
     for(let it=0;it<3;it++){
       head.fill(-1);
-      for(let i=0;i<N;i++){const o=i*3;
+      for(let i=0;i<N;i++){if(!act[i])continue;const o=i*3;
         const ix=Math.max(1,Math.min(GX-2,Math.floor(cur[o])+64)),iy=Math.max(1,Math.min(GY-2,Math.floor(cur[o+1])+1)),iz=Math.max(1,Math.min(GZ-2,Math.floor(cur[o+2])+64));
         const c=ix+GX*(iy+GY*iz);cellI[i]=c;nextB[i]=head[c];head[c]=i;}
-      for(let i=0;i<N;i++){const o=i*3,c=cellI[i];
+      for(let i=0;i<N;i++){if(!act[i])continue;const o=i*3,c=cellI[i];
         for(let dz=-1;dz<=1;dz++)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
           let j=head[c+dx+GX*(dy+GY*dz)];
           while(j>=0){if(j>i){const q=j*3,ex=cur[q]-cur[o],ey=cur[q+1]-cur[o+1],ez=cur[q+2]-cur[o+2],d2=ex*ex+ey*ey+ez*ez;
@@ -162,7 +173,7 @@ function physics(dt){
             j=nextB[j];}
         }
       }
-      for(let i=0;i<N;i++){const o=i*3;
+      for(let i=0;i<N;i++){if(!act[i])continue;const o=i*3;
         if(cur[o+1]<R){if(it===0){const fs=prev[o+1]-cur[o+1];if(fs>0.035){hitFloor++;if(fs>hitFloorMax)hitFloorMax=fs;}}cur[o+1]=R;prev[o]=cur[o]-(cur[o]-prev[o])*0.93;prev[o+2]=cur[o+2]-(cur[o+2]-prev[o+2])*0.93;if(prev[o+1]<cur[o+1])prev[o+1]=cur[o+1]+(cur[o+1]-prev[o+1])*-0.25;}
         const rr=Math.hypot(cur[o],cur[o+2]);if(rr>clampR){cur[o]*=clampR/rr;cur[o+2]*=clampR/rr;}
       }
@@ -175,7 +186,7 @@ function physics(dt){
 }
 function paint(){
   const C=DIMS[state.c],pal=(isDark()?C.dark:C.light).map(h=>new THREE.Color(h)),cell=cells[state.year];
-  for(let i=0;i<N;i++)balls.setColorAt(i,pal[C.of(cell[i])]);
+  for(let i=0;i<N;i++)if(cell[i]<ABS)balls.setColorAt(i,pal[C.of(cell[i])]);
   balls.instanceColor.needsUpdate=true;dirty=true;
 }
 function buildFrame(s,H,nx,nz,pitch){
@@ -250,16 +261,16 @@ function tap(e){
 /* ---------- breakdown strip (legend + counts) ---------- */
 function detail(){
   const C=DIMS[state.c],cell=cells[state.year],pal=isDark()?C.dark:C.light,cnt=C.cats.map(()=>0);let tot=0,title="全体";
-  for(let i=0;i<N;i++){if(state.sel>=0&&binOf[i]!==state.sel)continue;cnt[C.of(cell[i])]++;tot++;}
+  for(let i=0;i<N;i++){if(cell[i]>=ABS||(state.sel>=0&&binOf[i]!==state.sel))continue;cnt[C.of(cell[i])]++;tot++;}
   if(state.sel>=0){const b=bins[state.sel],p=[];if(state.x!=="none")p.push(DIMS[state.x].cats[b.xi]);if(state.z!=="none")p.push(DIMS[state.z].cats[b.zi]);title=p.join(" × ")||"全体";}
   document.getElementById("dt").innerHTML="<b></b><span></span>";
-  document.querySelector("#dt b").textContent=title;document.querySelector("#dt span").textContent=tot+"人の"+C.name+"別内訳";
+  document.querySelector("#dt b").textContent=title;document.querySelector("#dt span").textContent=tot+"個の"+C.name+"別内訳";
   const ul=document.getElementById("dl");ul.textContent="";
   C.cats.forEach((nm,i)=>{const li=document.createElement("li"),sw=document.createElement("i"),sp=document.createElement("span");sw.style.background=pal[i];sp.textContent=cnt[i];li.append(sw,nm,sp);ul.appendChild(li);});
 }
 function fact(){
-  const t=DATA.total[YEARS.indexOf(state.year)];
-  document.getElementById("fact").innerHTML="<b>"+state.year+"</b>年　実際の人口 <b>"+(t*10).toFixed(1)+"</b>億人　ボール1個 ≒ <b>"+Math.round(t*100)+"</b>万人";
+  const k=YEARS.indexOf(state.year),t=DATA.total[k];
+  document.getElementById("fact").innerHTML="<b>"+state.year+"</b>年　人口 <b>"+(t*10).toFixed(1)+"</b>億人　ボール <b>"+DATA.n[k]+"</b>個（1個＝約"+Math.round(DATA.unit/10)+"万人）";
 }
 
 /* ---------- controls ---------- */

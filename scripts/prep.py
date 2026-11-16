@@ -21,24 +21,34 @@ a["cell"]=a.reg*15+a.ageg*5+a.inc
 tot = a.groupby("year")["pop"].sum()
 w = mid[mid.country_code==900].groupby("year")["pop"].sum()
 print(pd.DataFrame({"sum":tot,"world":w}))
+# 1 ball = a fixed number of people in every year: world population of 2025 / 1000
+ABS=90  # code for "this ball does not exist in this year"
+unit=float(w[2025])/1000
+ns={y:int(round(float(w[y])/unit)) for y in YEARS}; NMAX=max(ns.values())
+print("unit (thousand):", unit, "balls:", ns)
 res={}; prev=None
 for y in YEARS:
+    n=ns[y]
     s=a[a.year==y].groupby("cell")["pop"].sum().reindex(range(90),fill_value=0)
-    q=s/s.sum()*1000; f=np.floor(q).astype(int); r=1000-f.sum()
+    q=s/s.sum()*n; f=np.floor(q).astype(int); r=n-f.sum()
     for c in (q-f).sort_values(ascending=False).index[:r]: f[c]+=1
     cnt=f.to_dict()
     if prev is None:
-        asg=[c for c in range(90) for _ in range(cnt[c])]
+        asg=[c for c in range(90) for _ in range(cnt[c])]+[ABS]*(NMAX-n)
     else:
-        need=dict(cnt); asg=[None]*1000
-        for i,c in enumerate(prev):
-            if need[c]>0: asg[i]=c; need[c]-=1
+        need=dict(cnt); asg=[None]*NMAX
+        for i,c in enumerate(prev):               # stay in the same group where possible
+            if c!=ABS and need[c]>0: asg[i]=c; need[c]-=1
         pool=[c for c in range(90) for _ in range(need[c])]
-        # movers: prefer same region, then same age
-        for i,c in enumerate(prev):
-            if asg[i] is None:
-                j=min(range(len(pool)), key=lambda k:(pool[k]//15!=c//15, (pool[k]//5)%3!=(c//5)%3, pool[k]%5!=c%5))
-                asg[i]=pool.pop(j)
+        for i,c in enumerate(prev):               # movers: prefer same region, then same age
+            if c!=ABS and asg[i] is None:
+                if pool:
+                    j=min(range(len(pool)), key=lambda k:(pool[k]//15!=c//15, (pool[k]//5)%3!=(c//5)%3, pool[k]%5!=c%5))
+                    asg[i]=pool.pop(j)
+                else: asg[i]=ABS                  # population shrank: the ball leaves
+        for i,c in enumerate(prev):               # population grew: new balls
+            if asg[i] is None: asg[i]=pool.pop(0) if pool else ABS
+    assert sum(1 for c in asg if c!=ABS)==n
     prev=asg; res[y]=asg
-    print(y, [sum(1 for c in asg if c//15==r) for r in range(6)], [sum(1 for c in asg if (c//5)%3==g) for g in range(3)], [sum(1 for c in asg if c%5==g) for g in range(5)])
-json.dump({"years":YEARS,"total":[round(float(w[y])/1e6,2) for y in YEARS],"cells":{str(y):"".join(chr(33+c) for c in res[y]) for y in YEARS}}, open(out,"w"))
+    print(y, n, [sum(1 for c in asg if c!=ABS and c//15==r) for r in range(6)], [sum(1 for c in asg if c!=ABS and (c//5)%3==g) for g in range(3)], [sum(1 for c in asg if c!=ABS and c%5==g) for g in range(5)])
+json.dump({"years":YEARS,"total":[round(float(w[y])/1e6,3) for y in YEARS],"n":[ns[y] for y in YEARS],"unit":round(unit),"cells":{str(y):"".join(chr(33+c) for c in res[y]) for y in YEARS}}, open(out,"w"))

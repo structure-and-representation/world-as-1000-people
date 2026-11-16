@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>世界を1000人で表すと</title>
-<meta name="description" content="世界の人口を1000個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで。">
+<meta name="description" content="2025年の世界の人口を1000個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで、ボールの数で人口の増減も見られます。">
 <meta property="og:title" content="世界を1000人で表すと">
-<meta property="og:description" content="世界の人口を1000個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで。">
+<meta property="og:description" content="2025年の世界の人口を1000個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで、ボールの数で人口の増減も見られます。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://world-as-1000-people.structure-and-representation.com/">
 <meta property="og:image" content="https://world-as-1000-people.structure-and-representation.com/ogp.png">
@@ -81,7 +81,7 @@ h1{padding-right:84px}
   <p id="fact"></p>
   <button type="button" id="snd" aria-pressed="true">音 オン</button>
 </header>
-<div id="stage" aria-label="世界の人口を1000個のボールで表した立体グラフ">
+<div id="stage" aria-label="世界の人口をボールで表した立体グラフ">
   <canvas id="cv"></canvas>
   <div id="labels"></div>
   <div id="hint">ドラッグで回転・ピンチで拡大・筒をタップで内訳</div>
@@ -97,8 +97,8 @@ h1{padding-right:84px}
   <div class="row"><span>色</span><div class="seg" id="s-c"></div></div>
   <details id="about">
     <summary>このページについて・出典</summary>
-    <p>世界の人口を1000個のボールに置き換えた実験です。ボール1個は、その年の世界人口の1000分の1にあたります。筒の底面積はすべて同じなので、高さがそのまま人数を表します。</p>
-    <p>出典：United Nations, DESA, Population Division. <a href="https://population.un.org/wpp/">World Population Prospects 2024</a>（<a href="https://creativecommons.org/licenses/by/3.0/igo/">CC BY 3.0 IGO</a>）。各年7月1日時点の人口で、2025年以降は中位推計です。年齢は3区分に集計しています。所得グループは、同データが採用する世界銀行の分類を、すべての年に当てはめています。1000個に丸めているため、各グループの人数には1人程度のずれが出ます。</p>
+    <p>2025年の世界の人口を1000個のボールに置き換えた実験です。ボール1個は約823万人で、どの年でも同じです。そのため、ほかの年はボールの数が変わります（1950年は303個、2100年は1237個）。筒の底面積はすべて同じなので、高さがそのまま人数を表し、年どうしでも比べられます。</p>
+    <p>出典：United Nations, DESA, Population Division. <a href="https://population.un.org/wpp/">World Population Prospects 2024</a>（<a href="https://creativecommons.org/licenses/by/3.0/igo/">CC BY 3.0 IGO</a>）。各年7月1日時点の人口で、2025年以降は中位推計です。年齢は3区分に集計しています。所得グループは、同データが採用する世界銀行の分類を、すべての年に当てはめています。ボールの数に丸めているため、各グループの個数には1個程度のずれが出ます。</p>
     <p>制作：矢崎裕一（Visualizing.JP）</p>
   </details>
 </div>

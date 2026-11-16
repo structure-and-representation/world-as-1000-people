@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>世界を1000人で表すと</title>
+<title>1000万人をボール1個にすると</title>
 <meta name="description" content="世界の人口を、1000万人につき1個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで、ボールの数で人口の増減も見られます。">
-<meta property="og:title" content="世界を1000人で表すと">
+<meta property="og:title" content="1000万人をボール1個にすると">
 <meta property="og:description" content="世界の人口を、1000万人につき1個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで、ボールの数で人口の増減も見られます。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://world-as-1000-people.structure-and-representation.com/">
@@ -17,81 +17,98 @@
 <meta name="twitter:image" content="https://world-as-1000-people.structure-and-representation.com/ogp.png">
 <link rel="canonical" href="https://world-as-1000-people.structure-and-representation.com/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-/* layout: one-screen app. header / 3D stage (fills) / breakdown strip / controls */
+/* layout: one-screen app. header / 3D stage (fills) / breakdown strip / toy-like control deck:
+   a rail with a rolling ball for the year, chunky press-down buttons for the splits */
 :root{
-  --bg:#eef1f4; --panel:#ffffff; --ink:#14181d; --muted:#5b6470; --line:#cfd6dd; --accent:#1f4fd1; --on-accent:#ffffff;
-  --font-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
-  --font-num:"Barlow Condensed","Zen Kaku Gothic New","Hiragino Sans",sans-serif;
+  --bg:#e4f1fa; --panel:#ffffff; --ink:#1b2947; --muted:#566381; --line:#b9cbe0; --mat:#cfe3f3;
+  --accent:#6c4df2; --accent-edge:#4a2fc0; --on-accent:#ffffff; --edge:#c3d2e6;
+  --font:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --bg:#12161b; --panel:#1b2128; --ink:#eef1f4; --muted:#9aa5b1; --line:#323b46; --accent:#8eaaff; --on-accent:#0d1220; color-scheme:dark; }
+  :root:not([data-theme="light"]){ --bg:#101a33; --panel:#1b2848; --ink:#f1f5ff; --muted:#a3b0cf; --line:#3a4a75; --mat:#17233f; --accent:#a592ff; --accent-edge:#6f58d8; --on-accent:#14102e; --edge:#0b1226; color-scheme:dark; }
 }
-:root[data-theme="dark"]{ --bg:#12161b; --panel:#1b2128; --ink:#eef1f4; --muted:#9aa5b1; --line:#323b46; --accent:#8eaaff; --on-accent:#0d1220; color-scheme:dark; }
+:root[data-theme="dark"]{ --bg:#101a33; --panel:#1b2848; --ink:#f1f5ff; --muted:#a3b0cf; --line:#3a4a75; --mat:#17233f; --accent:#a592ff; --accent-edge:#6f58d8; --on-accent:#14102e; --edge:#0b1226; color-scheme:dark; }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45;display:flex;flex-direction:column;overflow:hidden;-webkit-text-size-adjust:100%}
-header{padding:12px 16px 4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px}
-h1{font-size:18px;font-weight:700;margin:0;letter-spacing:.02em;text-wrap:balance}
-#fact{color:var(--muted);font-size:12.5px;margin:0}
-#fact b{font-family:var(--font-num);font-size:17px;font-weight:600;color:var(--ink);letter-spacing:.01em;font-variant-numeric:tabular-nums}
-header{position:relative}
-h1{padding-right:84px}
-#fact{flex:1 0 100%}
-#snd{position:absolute;right:16px;top:12px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:inherit;font-size:11.5px;padding:5px 10px;border-radius:999px;cursor:pointer}
-#snd[aria-pressed="true"]{color:var(--ink);border-color:var(--accent)}
-#snd:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#stage{position:relative;flex:1 1 auto;min-height:180px;overflow:hidden;touch-action:none;cursor:grab}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-weight:500;font-size:14px;line-height:1.45;display:flex;flex-direction:column;overflow:hidden;-webkit-text-size-adjust:100%}
+header{position:relative;padding:12px 16px 2px;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 14px}
+h1{font-size:17px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balance;padding-right:86px}
+#fact{flex:1 0 100%;color:var(--muted);font-size:12.5px;margin:0;font-weight:700}
+#fact b{font-size:21px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;display:inline-block}
+#fact b.bump{animation:bump .45s cubic-bezier(.3,1.8,.5,1)}
+#snd{position:absolute;right:16px;top:10px;border:0;background:var(--panel);color:var(--muted);font:inherit;font-weight:700;font-size:11.5px;padding:6px 11px;border-radius:999px;cursor:pointer;box-shadow:0 3px 0 var(--edge)}
+#snd[aria-pressed="true"]{color:var(--accent)}
+#snd:active{transform:translateY(2px);box-shadow:0 1px 0 var(--edge)}
+#stage{position:relative;flex:1 1 auto;min-height:170px;overflow:hidden;touch-action:none;cursor:grab}
 #stage canvas{display:block;width:100%;height:100%}
 #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .lb{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 6px var(--bg)}
-.lb.n{font-family:var(--font-num);font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
-.lb.c{font-size:11.5px;font-weight:700}
-.lb.r{font-size:11.5px;font-weight:700;color:var(--muted)}
-#hint{position:absolute;right:12px;top:6px;font-size:11px;color:var(--muted);pointer-events:none}
-#detail{padding:6px 16px 8px;border-top:1px solid var(--line);min-height:52px}
-#dt{font-size:12px;color:var(--muted);margin:0 0 3px;display:flex;gap:8px;align-items:baseline}
-#dt b{color:var(--ink);font-weight:700}
-#dl{display:flex;flex-wrap:wrap;gap:2px 14px;margin:0;padding:0;list-style:none}
-#dl li{display:flex;align-items:center;gap:5px;font-size:12px}
-#dl i{width:10px;height:10px;border-radius:50%;flex:none}
-#dl span{font-family:var(--font-num);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
-#controls{background:var(--panel);border-top:1px solid var(--line);padding:8px 16px 10px;display:grid;gap:6px}
-.row{display:grid;grid-template-columns:4.6em 1fr;align-items:center;gap:8px}
-.row>span{font-size:11.5px;color:var(--muted);font-weight:500}
-.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{flex:1 1 0;min-width:0;border:0;border-left:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:12.5px;padding:7px 2px;cursor:pointer;font-variant-numeric:tabular-nums}
-.seg button:first-child{border-left:0}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:700}
-.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
-.seg button:disabled{opacity:.35;cursor:default}
-#controls{max-height:62%;overflow-y:auto}
+.lb.n{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.lb.c{font-size:11.5px;font-weight:800}
+.lb.r{font-size:11.5px;font-weight:800;color:var(--muted)}
+#hint{position:absolute;right:12px;top:4px;font-size:10.5px;color:var(--muted);pointer-events:none}
+#detail{padding:5px 16px 7px;min-height:48px}
+#dt{font-size:11.5px;color:var(--muted);margin:0 0 2px;display:flex;gap:8px;align-items:baseline}
+#dt b{color:var(--ink);font-weight:800}
+#dl{display:flex;flex-wrap:wrap;gap:2px 12px;margin:0;padding:0;list-style:none}
+#dl li{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700}
+#dl i{width:13px;height:13px;border-radius:50%;flex:none;background-image:radial-gradient(circle at 34% 30%,rgba(255,255,255,.75) 0 14%,rgba(255,255,255,0) 46%)}
+#dl span{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+#controls{background:var(--panel);border-radius:22px 22px 0 0;box-shadow:0 -3px 0 var(--edge);padding:10px 16px 10px;display:grid;gap:9px;max-height:64%;overflow-y:auto}
+.row{display:grid;grid-template-columns:4.7em 1fr;align-items:center;gap:8px}
+.row>span{font-size:11.5px;color:var(--muted);font-weight:700}
+.seg{display:flex;gap:7px;padding-bottom:4px}
+.seg button{flex:1 1 0;min-width:0;border:0;border-radius:13px;background:var(--bg);color:var(--ink);font:inherit;font-weight:700;font-size:13px;padding:8px 2px;cursor:pointer;box-shadow:0 4px 0 var(--edge);transition:transform .08s,box-shadow .08s;-webkit-tap-highlight-color:transparent}
+.seg button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:800;box-shadow:0 4px 0 var(--accent-edge)}
+.seg button[aria-pressed="true"]:active{box-shadow:0 1px 0 var(--accent-edge)}
+.seg button.pop{animation:pop .42s cubic-bezier(.3,1.7,.5,1)}
+.seg button:focus-visible,#snd:focus-visible,#rail button:focus-visible,#knob:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* year rail: seven stops and a ball that rolls between them */
+#rail{position:relative;height:58px;touch-action:none;user-select:none;-webkit-user-select:none}
+#rail .track{position:absolute;left:7.14%;right:7.14%;top:17px;height:10px;border-radius:5px;background:var(--bg);box-shadow:inset 0 2px 0 var(--edge)}
+#s-year{position:absolute;inset:0;display:flex}
+#s-year button{flex:1 1 0;min-width:0;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;font-size:11.5px;padding:38px 0 0;cursor:pointer;position:relative;font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+#s-year button::before{content:"";position:absolute;left:50%;top:18px;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:var(--line)}
+#s-year button[aria-pressed="true"],#s-year button.near{color:var(--ink);font-weight:800;font-size:13px}
+#knob{position:absolute;top:4px;left:50%;width:36px;height:36px;margin-left:-18px;border-radius:50%;cursor:grab;touch-action:none;
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.7) 0 12%,rgba(255,255,255,0) 40%),linear-gradient(90deg,var(--accent) 0 36%,var(--on-accent) 36% 64%,var(--accent) 64%);
+  box-shadow:0 4px 0 var(--accent-edge),0 0 0 3px var(--panel);transition:left .45s cubic-bezier(.3,1.35,.5,1),transform .45s cubic-bezier(.3,1.35,.5,1)}
+#knob.drag{transition:none;cursor:grabbing}
+@keyframes pop{0%{transform:scale(.9)}55%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes bump{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-5px) scale(1.12)}100%{transform:translateY(0) scale(1)}}
+@media (prefers-reduced-motion: reduce){.seg button.pop,#fact b.bump{animation:none}#knob{transition:none}}
 #about{font-size:11px;color:var(--muted)}
-#about summary{cursor:pointer;padding:2px 0}
-#about summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#about summary{cursor:pointer;padding:2px 0;font-weight:700}
+#about summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 #about p{margin:6px 0 0;max-width:65ch}
 #about a{color:inherit}
 </style>
 </head>
 <body>
 <header>
-  <h1>世界を1000人で表すと</h1>
+  <h1>1000万人をボール1個にすると</h1>
   <p id="fact"></p>
   <button type="button" id="snd" aria-pressed="true">音 オン</button>
 </header>
 <div id="stage" aria-label="世界の人口をボールで表した立体グラフ">
   <canvas id="cv"></canvas>
   <div id="labels"></div>
-  <div id="hint">ドラッグで回転・ピンチで拡大・筒をタップで内訳</div>
+  <div id="hint">ドラッグで回転・ピンチで拡大・筒をタップ</div>
 </div>
 <section id="detail" aria-live="polite">
   <p id="dt"></p>
   <ul id="dl"></ul>
 </section>
 <div id="controls">
-  <div class="row"><span>年</span><div class="seg" id="s-year"></div></div>
+  <div id="rail">
+    <div class="track"></div>
+    <div id="s-year" role="group" aria-label="年"></div>
+    <div id="knob" role="slider" tabindex="0" aria-label="年" aria-valuemin="1950" aria-valuemax="2100" aria-valuenow="2025" aria-valuetext="2025年"></div>
+  </div>
   <div class="row"><span>横に分ける</span><div class="seg" id="s-x"></div></div>
   <div class="row"><span>奥に分ける</span><div class="seg" id="s-z"></div></div>
   <div class="row"><span>色</span><div class="seg" id="s-c"></div></div>

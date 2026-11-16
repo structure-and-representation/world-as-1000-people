@@ -23,9 +23,10 @@ const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(32,1,0.1,500);
 scene.add(new THREE.HemisphereLight(0xffffff,0x8a8f98,0.92));
 const sun=new THREE.DirectionalLight(0xffffff,0.38);sun.position.set(-6,14,10);scene.add(sun);
-const balls=new THREE.InstancedMesh(new THREE.SphereGeometry(0.47,18,12),new THREE.MeshLambertMaterial(),N);
+const balls=new THREE.InstancedMesh(new THREE.SphereGeometry(0.47,18,12),new THREE.MeshPhongMaterial({shininess:55,specular:0x3a3a3a}),N);
 balls.instanceMatrix.setUsage(THREE.DynamicDrawUsage);balls.frustumCulled=false;scene.add(balls);
 const frame=new THREE.Group();scene.add(frame);
+const mat=new THREE.Mesh(new THREE.CircleGeometry(1,72),new THREE.MeshBasicMaterial({depthWrite:false}));mat.rotation.x=-Math.PI/2;mat.position.y=-0.03;mat.renderOrder=-1;scene.add(mat);
 
 const cur=new Float32Array(N*3),from=new Float32Array(N*3),to=new Float32Array(N*3),t0=new Float32Array(N),dur=new Float32Array(N);
 const binOf=new Int16Array(N),jit=new Float32Array(N*3),pour=new Uint8Array(N),prev=new Float32Array(N*3),sc=new Float32Array(N),act=new Uint8Array(N);
@@ -87,6 +88,7 @@ function step(){
     if(dur[i]<=0)continue;const o=i*3;let u=(clock-t0[i])/dur[i];
     if(u<=0){any=true;continue;}
     if(u>=1){u=1;dur[i]=0;if(pour[i]!==3&&(land<0||to[o+1]>to[land*3+1])){land=i;landPour=!!pour[i];}}else any=true;
+    if(pour[i]===4){cur[o+1]=to[o+1]+Math.sin(Math.PI*u)*(0.55+Math.abs(jit[o+2])*7);continue;}
     if(pour[i]===3){sc[i]=1-u;continue;}
     if(pour[i]===2){sc[i]=1;cur[o+1]=from[o+1]+(to[o+1]-from[o+1])*u*u;continue;}
     if(pour[i]){
@@ -192,6 +194,7 @@ function paint(){
 function buildFrame(s,H,nx,nz,pitch){
   while(frame.children.length){const o=frame.children.pop();o.geometry.dispose();o.material.dispose();}
   labelBox.textContent="";labels=[];
+  mat.material.color.set(css("--mat"));mat.scale.setScalar(Math.hypot(nx*pitch,nz*pitch)/2+1.2);
   const line=new THREE.Color(css("--line")),ink=new THREE.Color(css("--muted"));
   bins.forEach((b,bi)=>{
     const g=new THREE.EdgesGeometry(new THREE.BoxGeometry(s+0.3,H+0.2,s+0.3));
@@ -256,6 +259,12 @@ function tap(e){
   const acc=new THREE.Color(css("--accent")),line=new THREE.Color(css("--line"));
   frame.children.forEach(o=>{if(o.isLineSegments)o.material.color.copy(o.userData.bin===state.sel?acc:line);});
   detail();dirty=true;
+  if(hit&&!moving&&!reduce){/* the tapped tube answers: its balls hop, bottom layer first */
+    const b=bins[state.sel];
+    b.ids.forEach((id,k)=>{const o=id*3;from[o]=cur[o]=to[o];from[o+1]=cur[o+1]=to[o+1];from[o+2]=cur[o+2]=to[o+2];
+      pour[id]=4;t0[id]=clock+(to[o+1]|0)*0.035+Math.abs(jit[o])*1.2;dur[id]=0.42;});
+    moving=true;blip(PENTA[4],0.13,0.2);
+  }
 }
 
 /* ---------- breakdown strip (legend + counts) ---------- */
@@ -269,22 +278,53 @@ function detail(){
   C.cats.forEach((nm,i)=>{const li=document.createElement("li"),sw=document.createElement("i"),sp=document.createElement("span");sw.style.background=pal[i];sp.textContent=cnt[i];li.append(sw,nm,sp);ul.appendChild(li);});
 }
 function fact(){
-  const k=YEARS.indexOf(state.year),t=DATA.total[k];
-  document.getElementById("fact").innerHTML="<b>"+state.year+"</b>年　人口 <b>"+(t*10).toFixed(1)+"</b>億人　ボール <b>"+DATA.n[k]+"</b>個（1個＝"+Math.round(DATA.unit/10)+"万人）";
+  const k=YEARS.indexOf(state.year),t=DATA.total[k],el=document.getElementById("fact");
+  el.innerHTML="<b>"+state.year+"</b>年　人口 <b>"+(t*10).toFixed(1)+"</b>億人　ボール <b>"+DATA.n[k]+"</b>個";
+  if(!reduce)el.querySelectorAll("b").forEach((b,n)=>{b.style.animationDelay=(n*70)+"ms";b.classList.add("bump");});
 }
 
 /* ---------- controls ---------- */
+function apply(key,val){
+  if(String(state[key])===String(val))return;state[key]=val;
+  if(key==="x"&&state.z===state.x)state.z="none";if(key==="z"&&state.x===state.z)state.x="none";
+  sync();if(key==="year")fact();
+  if(phase==="spill"){if(key==="c")paint();return;}
+  if(key==="x"||key==="z")startSpill();else layout("move");
+}
 function seg(id,opts,key){
   const box=document.getElementById(id);
   opts.forEach(o=>{const b=document.createElement("button");b.type="button";b.textContent=o[1];b.dataset.v=o[0];b.id=id+"-"+o[0];
-    b.addEventListener("click",()=>{if(String(state[key])===String(o[0]))return;state[key]=key==="year"?+o[0]:o[0];
-      if(key==="x"&&state.z===state.x)state.z="none";if(key==="z"&&state.x===state.z)state.x="none";
-      sync();if(key==="year")fact();
-      if(phase==="spill"){if(key==="c")paint();return;}
-      if(key==="x"||key==="z")startSpill();else layout("move");});
+    b.addEventListener("click",()=>{b.classList.remove("pop");void b.offsetWidth;b.classList.add("pop");apply(key,key==="year"?+o[0]:o[0]);});
     box.appendChild(b);});
 }
-function sync(){[["s-year","year"],["s-x","x"],["s-z","z"],["s-c","c"]].forEach(p=>{document.querySelectorAll("#"+p[0]+" button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(state[p[1]]))));});}
+/* year rail: the ball sits on the current stop; drag it or tap a stop and it rolls there */
+const knob=document.getElementById("knob"),rail=document.getElementById("rail");
+const stopPct=i=>(i+0.5)/YEARS.length*100;
+function placeKnob(){
+  const i=YEARS.indexOf(state.year),w=rail.clientWidth||320;
+  knob.style.left=stopPct(i)+"%";knob.style.transform="rotate("+(stopPct(i)/100*w/18).toFixed(3)+"rad)";
+  knob.setAttribute("aria-valuenow",state.year);knob.setAttribute("aria-valuetext",state.year+"年");
+}
+function sync(){[["s-year","year"],["s-x","x"],["s-z","z"],["s-c","c"]].forEach(p=>{document.querySelectorAll("#"+p[0]+" button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(state[p[1]]))));});placeKnob();}
+let dragNear=-1;
+function nearAt(clientX){const r=rail.getBoundingClientRect();return Math.max(0,Math.min(YEARS.length-1,Math.floor((clientX-r.left)/r.width*YEARS.length)));}
+knob.addEventListener("pointerdown",e=>{knob.setPointerCapture(e.pointerId);knob.classList.add("drag");dragNear=YEARS.indexOf(state.year);e.preventDefault();});
+knob.addEventListener("pointermove",e=>{
+  if(!knob.classList.contains("drag"))return;
+  const r=rail.getBoundingClientRect(),x=Math.max(r.width*0.5/YEARS.length,Math.min(r.width*(1-0.5/YEARS.length),e.clientX-r.left));
+  knob.style.left=x+"px";knob.style.transform="rotate("+(x/18).toFixed(3)+"rad)";
+  const n=nearAt(e.clientX);
+  if(n!==dragNear){dragNear=n;document.querySelectorAll("#s-year button").forEach((b,i)=>b.classList.toggle("near",i===n));blip(PENTA[3+n],0.09,0.1);}
+});
+function endDrag(e){
+  if(!knob.classList.contains("drag"))return;knob.classList.remove("drag");
+  document.querySelectorAll("#s-year button").forEach(b=>b.classList.remove("near"));
+  const y=YEARS[dragNear<0?YEARS.indexOf(state.year):dragNear];
+  if(y===state.year)placeKnob();else apply("year",y);
+}
+knob.addEventListener("pointerup",e=>{ensureAudio();endDrag(e);});knob.addEventListener("pointercancel",endDrag);
+knob.addEventListener("keydown",e=>{const i=YEARS.indexOf(state.year),d=(e.key==="ArrowRight"||e.key==="ArrowUp")?1:(e.key==="ArrowLeft"||e.key==="ArrowDown")?-1:0;
+  if(d&&YEARS[i+d]){e.preventDefault();apply("year",YEARS[i+d]);}});
 const dimOpts=[["reg","地域"],["age","年齢"],["inc","所得"]];
 seg("s-year",YEARS.map(y=>[y,String(y)]),"year");
 seg("s-x",[["none","なし"]].concat(dimOpts),"x");

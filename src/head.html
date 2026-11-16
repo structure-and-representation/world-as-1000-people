@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>世界を1000人で表すと</title>
+<meta name="description" content="世界の人口を1000個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで。">
+<meta property="og:title" content="世界を1000人で表すと">
+<meta property="og:description" content="世界の人口を1000個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで。">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* layout: one-screen app. header / 3D stage (fills) / breakdown strip / controls */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#14181d; --muted:#5b6470; --line:#cfd6dd; --accent:#1f4fd1; --on-accent:#ffffff;
+  --font-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --font-num:"Barlow Condensed","Zen Kaku Gothic New","Hiragino Sans",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#12161b; --panel:#1b2128; --ink:#eef1f4; --muted:#9aa5b1; --line:#323b46; --accent:#8eaaff; --on-accent:#0d1220; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#12161b; --panel:#1b2128; --ink:#eef1f4; --muted:#9aa5b1; --line:#323b46; --accent:#8eaaff; --on-accent:#0d1220; color-scheme:dark; }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45;display:flex;flex-direction:column;overflow:hidden;-webkit-text-size-adjust:100%}
+header{padding:12px 16px 4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px}
+h1{font-size:18px;font-weight:700;margin:0;letter-spacing:.02em;text-wrap:balance}
+#fact{color:var(--muted);font-size:12.5px;margin:0}
+#fact b{font-family:var(--font-num);font-size:17px;font-weight:600;color:var(--ink);letter-spacing:.01em;font-variant-numeric:tabular-nums}
+header{position:relative}
+h1{padding-right:84px}
+#fact{flex:1 0 100%}
+#snd{position:absolute;right:16px;top:12px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font:inherit;font-size:11.5px;padding:5px 10px;border-radius:999px;cursor:pointer}
+#snd[aria-pressed="true"]{color:var(--ink);border-color:var(--accent)}
+#snd:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:relative;flex:1 1 auto;min-height:180px;overflow:hidden;touch-action:none;cursor:grab}
+#stage canvas{display:block;width:100%;height:100%}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 6px var(--bg)}
+.lb.n{font-family:var(--font-num);font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.lb.c{font-size:11.5px;font-weight:700}
+.lb.r{font-size:11.5px;font-weight:700;color:var(--muted)}
+#hint{position:absolute;right:12px;top:6px;font-size:11px;color:var(--muted);pointer-events:none}
+#detail{padding:6px 16px 8px;border-top:1px solid var(--line);min-height:52px}
+#dt{font-size:12px;color:var(--muted);margin:0 0 3px;display:flex;gap:8px;align-items:baseline}
+#dt b{color:var(--ink);font-weight:700}
+#dl{display:flex;flex-wrap:wrap;gap:2px 14px;margin:0;padding:0;list-style:none}
+#dl li{display:flex;align-items:center;gap:5px;font-size:12px}
+#dl i{width:10px;height:10px;border-radius:50%;flex:none}
+#dl span{font-family:var(--font-num);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+#controls{background:var(--panel);border-top:1px solid var(--line);padding:8px 16px 10px;display:grid;gap:6px}
+.row{display:grid;grid-template-columns:4.6em 1fr;align-items:center;gap:8px}
+.row>span{font-size:11.5px;color:var(--muted);font-weight:500}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1 1 0;min-width:0;border:0;border-left:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;font-size:12.5px;padding:7px 2px;cursor:pointer;font-variant-numeric:tabular-nums}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:700}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.seg button:disabled{opacity:.35;cursor:default}
+#controls{max-height:62%;overflow-y:auto}
+#about{font-size:11px;color:var(--muted)}
+#about summary{cursor:pointer;padding:2px 0}
+#about summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#about p{margin:6px 0 0;max-width:65ch}
+#about a{color:inherit}
+</style>
+</head>
+<body>
+<header>
+  <h1>世界を1000人で表すと</h1>
+  <p id="fact"></p>
+  <button type="button" id="snd" aria-pressed="true">音 オン</button>
+</header>
+<div id="stage" aria-label="世界の人口を1000個のボールで表した立体グラフ">
+  <canvas id="cv"></canvas>
+  <div id="labels"></div>
+  <div id="hint">ドラッグで回転・ピンチで拡大・筒をタップで内訳</div>
+</div>
+<section id="detail" aria-live="polite">
+  <p id="dt"></p>
+  <ul id="dl"></ul>
+</section>
+<div id="controls">
+  <div class="row"><span>年</span><div class="seg" id="s-year"></div></div>
+  <div class="row"><span>横に分ける</span><div class="seg" id="s-x"></div></div>
+  <div class="row"><span>奥に分ける</span><div class="seg" id="s-z"></div></div>
+  <div class="row"><span>色</span><div class="seg" id="s-c"></div></div>
+  <details id="about">
+    <summary>このページについて・出典</summary>
+    <p>世界の人口を1000個のボールに置き換えた実験です。ボール1個は、その年の世界人口の1000分の1にあたります。筒の底面積はすべて同じなので、高さがそのまま人数を表します。</p>
+    <p>出典：United Nations, DESA, Population Division. <a href="https://population.un.org/wpp/">World Population Prospects 2024</a>（<a href="https://creativecommons.org/licenses/by/3.0/igo/">CC BY 3.0 IGO</a>）。各年7月1日時点の人口で、2025年以降は中位推計です。年齢は3区分に集計しています。所得グループは、同データが採用する世界銀行の分類を、すべての年に当てはめています。1000個に丸めているため、各グループの人数には1人程度のずれが出ます。</p>
+    <p>制作：矢崎裕一（Visualizing.JP）</p>
+  </details>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

@@ -297,12 +297,12 @@ function seg(id,opts,key){
     b.addEventListener("click",()=>{b.classList.remove("pop");void b.offsetWidth;b.classList.add("pop");apply(key,key==="year"?+o[0]:o[0]);});
     box.appendChild(b);});
 }
-/* year rail: the ball sits on the current stop; drag it or tap a stop and it rolls there */
+/* year rail: the handle sits on the current stop; drag it or tap a stop and it slides there */
 const knob=document.getElementById("knob"),rail=document.getElementById("rail");
 const stopPct=i=>(i+0.5)/YEARS.length*100;
 function placeKnob(){
   const i=YEARS.indexOf(state.year),w=rail.clientWidth||320;
-  knob.style.left=stopPct(i)+"%";knob.style.transform="rotate("+(stopPct(i)/100*w/18).toFixed(3)+"rad)";
+  knob.style.left=stopPct(i)+"%";
   knob.setAttribute("aria-valuenow",state.year);knob.setAttribute("aria-valuetext",state.year+"年");
 }
 function sync(){[["s-year","year"],["s-x","x"],["s-z","z"],["s-c","c"]].forEach(p=>{document.querySelectorAll("#"+p[0]+" button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(state[p[1]]))));});placeKnob();}
@@ -312,7 +312,7 @@ knob.addEventListener("pointerdown",e=>{knob.setPointerCapture(e.pointerId);knob
 knob.addEventListener("pointermove",e=>{
   if(!knob.classList.contains("drag"))return;
   const r=rail.getBoundingClientRect(),x=Math.max(r.width*0.5/YEARS.length,Math.min(r.width*(1-0.5/YEARS.length),e.clientX-r.left));
-  knob.style.left=x+"px";knob.style.transform="rotate("+(x/18).toFixed(3)+"rad)";
+  knob.style.left=x+"px";
   const n=nearAt(e.clientX);
   if(n!==dragNear){dragNear=n;document.querySelectorAll("#s-year button").forEach((b,i)=>b.classList.toggle("near",i===n));blip(PENTA[3+n],0.09,0.1);}
 });

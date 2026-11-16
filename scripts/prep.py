@@ -21,9 +21,9 @@ a["cell"]=a.reg*15+a.ageg*5+a.inc
 tot = a.groupby("year")["pop"].sum()
 w = mid[mid.country_code==900].groupby("year")["pop"].sum()
 print(pd.DataFrame({"sum":tot,"world":w}))
-# 1 ball = a fixed number of people in every year: world population of 2025 / 1000
+# 1 ball = 10 million people in every year (population is in thousands)
 ABS=90  # code for "this ball does not exist in this year"
-unit=float(w[2025])/1000
+unit=10000.0
 ns={y:int(round(float(w[y])/unit)) for y in YEARS}; NMAX=max(ns.values())
 print("unit (thousand):", unit, "balls:", ns)
 res={}; prev=None

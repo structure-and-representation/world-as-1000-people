@@ -270,7 +270,7 @@ function detail(){
 }
 function fact(){
   const k=YEARS.indexOf(state.year),t=DATA.total[k];
-  document.getElementById("fact").innerHTML="<b>"+state.year+"</b>年　人口 <b>"+(t*10).toFixed(1)+"</b>億人　ボール <b>"+DATA.n[k]+"</b>個（1個＝約"+Math.round(DATA.unit/10)+"万人）";
+  document.getElementById("fact").innerHTML="<b>"+state.year+"</b>年　人口 <b>"+(t*10).toFixed(1)+"</b>億人　ボール <b>"+DATA.n[k]+"</b>個（1個＝"+Math.round(DATA.unit/10)+"万人）";
 }
 
 /* ---------- controls ---------- */

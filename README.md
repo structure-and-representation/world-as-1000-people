@@ -1,5 +1,7 @@
 # 世界を1000人で表すと
 
+https://world-as-1000-people.structure-and-representation.com/
+
 世界の人口を1000個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフです。
 分け方を切り替えると、仕切りが消えてボールが崩れ、新しい筒に注がれます。
 
@@ -44,7 +46,8 @@ python3 scripts/build.py src data/data.json index.html /dev/null
   分類のない国・地域（ベネズエラなど）は「分類なし」としています。
 - 1000個への割り当ては、地域×年齢×所得の90区分を最大剰余法で丸めています。各グループの人数には1人程度のずれが出ます。
 
-## 公開前に決めること
+## 公開
 
-- `og:image` と `og:url` は、公開URLが決まってから絶対URLで `src/head.html` に追加します。
+- 公開URL：https://world-as-1000-people.structure-and-representation.com/
+- GitHub Pages（`main` ブランチのルート）で公開します。独自ドメインは `CNAME` ファイルで指定しています。
 - リポジトリのライセンス（コード部分）は未設定です。

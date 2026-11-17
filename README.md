@@ -1,6 +1,8 @@
-# 1000万人をボール1個にすると
+# 世界がもしボールプールだったら
 
-https://world-as-1000-people.structure-and-representation.com/
+ボール1個は1000万人。
+
+https://world-as-a-ball-pool.structure-and-representation.com/
 
 世界の人口を、1000万人につき1個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフです。
 ボール1個の人数はどの年でも同じなので、年によってボールの数が変わります（1950年は249個、2025年は823個、2100年は1018個）。
@@ -51,6 +53,6 @@ python3 scripts/build.py src data/data.json index.html /dev/null
 
 ## 公開
 
-- 公開URL：https://world-as-1000-people.structure-and-representation.com/
+- 公開URL：https://world-as-a-ball-pool.structure-and-representation.com/
 - GitHub Pages（`main` ブランチのルート）で公開します。独自ドメインは `CNAME` ファイルで指定しています。
 - リポジトリのライセンス（コード部分）は未設定です。

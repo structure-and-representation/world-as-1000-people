@@ -305,7 +305,12 @@ function placeKnob(){
   knob.style.left=stopPct(i)+"%";
   knob.setAttribute("aria-valuenow",state.year);knob.setAttribute("aria-valuetext",state.year+"年");
 }
-function sync(){[["s-year","year"],["s-x","x"],["s-z","z"],["s-c","c"]].forEach(p=>{document.querySelectorAll("#"+p[0]+" button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(state[p[1]]))));});placeKnob();}
+function sync(){
+  [["s-year","year"],["s-c","c"]].forEach(p=>{document.querySelectorAll("#"+p[0]+" button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(state[p[1]]))));});
+  document.querySelectorAll("#s-split button").forEach(b=>{const ax=state.x===b.dataset.v?"横":state.z===b.dataset.v?"奥":"";
+    b.setAttribute("aria-pressed",String(!!ax));b.dataset.ax=ax;b.setAttribute("aria-label",b.textContent+(ax?"（"+ax+"に分ける）":"（分けない）"));});
+  placeKnob();
+}
 let dragNear=-1;
 function nearAt(clientX){const r=rail.getBoundingClientRect();return Math.max(0,Math.min(YEARS.length-1,Math.floor((clientX-r.left)/r.width*YEARS.length)));}
 knob.addEventListener("pointerdown",e=>{knob.setPointerCapture(e.pointerId);knob.classList.add("drag");dragNear=YEARS.indexOf(state.year);e.preventDefault();});
@@ -327,8 +332,17 @@ knob.addEventListener("keydown",e=>{const i=YEARS.indexOf(state.year),d=(e.key==
   if(d&&YEARS[i+d]){e.preventDefault();apply("year",YEARS[i+d]);}});
 const dimOpts=[["reg","地域"],["age","年齢"],["inc","所得"]];
 seg("s-year",YEARS.map(y=>[y,String(y)]),"year");
-seg("s-x",[["none","なし"]].concat(dimOpts),"x");
-seg("s-z",[["none","なし"]].concat(dimOpts),"z");
+/* one row for both directions: the first choice divides across (横), the second into depth (奥); tap again to remove */
+(function(){const box=document.getElementById("s-split");
+  dimOpts.forEach(o=>{const b=document.createElement("button");b.type="button";b.textContent=o[1];b.dataset.v=o[0];b.id="s-split-"+o[0];
+    b.addEventListener("click",()=>{b.classList.remove("pop");void b.offsetWidth;b.classList.add("pop");
+      const d=o[0];
+      if(state.x===d){state.x=state.z;state.z="none";}
+      else if(state.z===d){state.z="none";}
+      else if(state.x==="none"){state.x=d;}
+      else{state.z=d;}
+      sync();if(phase!=="spill")startSpill();});
+    box.appendChild(b);});})();
 seg("s-c",dimOpts,"c");
 
 const sndBtn=document.getElementById("snd");

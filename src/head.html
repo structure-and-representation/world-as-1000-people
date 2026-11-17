@@ -62,6 +62,10 @@ h1{font-size:17px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balanc
 .row{display:grid;grid-template-columns:4.7em 1fr;align-items:center;gap:8px}
 .row>span{font-size:11.5px;color:var(--muted);font-weight:700}
 .seg{display:flex;gap:7px;padding-bottom:4px}
+.row>span small{display:block;font-size:10px;font-weight:500}
+/* split buttons carry a badge that says which direction they divide: 横 (across) or 奥 (into depth) */
+#s-split button{position:relative}
+#s-split button[data-ax]:not([data-ax=""])::after{content:attr(data-ax);position:absolute;top:-7px;right:-3px;background:var(--ink);color:var(--panel);font-size:10.5px;font-weight:800;line-height:1;padding:3px 6px;border-radius:999px;box-shadow:0 0 0 2px var(--panel)}
 .seg button{flex:1 1 0;min-width:0;border:0;border-radius:13px;background:var(--bg);color:var(--ink);font:inherit;font-weight:700;font-size:13px;padding:8px 2px;cursor:pointer;box-shadow:0 4px 0 var(--edge);transition:transform .08s,box-shadow .08s;-webkit-tap-highlight-color:transparent}
 .seg button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:800;box-shadow:0 4px 0 var(--accent-edge)}
@@ -114,8 +118,7 @@ h1{font-size:17px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balanc
     <div id="s-year" role="group" aria-label="年"></div>
     <div id="knob" role="slider" tabindex="0" aria-label="年" aria-valuemin="1950" aria-valuemax="2100" aria-valuenow="2025" aria-valuetext="2025年"></div>
   </div>
-  <div class="row"><span>横に分ける</span><div class="seg" id="s-x"></div></div>
-  <div class="row"><span>奥に分ける</span><div class="seg" id="s-z"></div></div>
+  <div class="row"><span>分ける<small>2つまで</small></span><div class="seg" id="s-split"></div></div>
   <div class="row"><span>色</span><div class="seg" id="s-c"></div></div>
   <details id="about">
     <summary>このページについて・出典</summary>

@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>世界がもしボールプールだったら</title>
-<meta name="description" content="世界の人口を、1000万人につき1個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで、ボールの数で人口の増減も見られます。">
-<meta property="og:title" content="世界がもしボールプールだったら">
-<meta property="og:description" content="世界の人口を、1000万人につき1個のボールに置き換え、地域・年齢・所得で分けて見る立体グラフ。1950年から2100年まで、ボールの数で人口の増減も見られます。">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESC}}">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESC}}">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://world-as-a-ball-pool.structure-and-representation.com/">
-<meta property="og:image" content="https://world-as-a-ball-pool.structure-and-representation.com/ogp.png">
+<meta property="og:url" content="{{URL}}">
+<meta property="og:image" content="{{URL}}ogp.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://world-as-a-ball-pool.structure-and-representation.com/ogp.png">
-<link rel="canonical" href="https://world-as-a-ball-pool.structure-and-representation.com/">
+<meta name="twitter:image" content="{{URL}}ogp.png">
+<link rel="canonical" href="{{URL}}">
 <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-NW64PCN2"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -42,7 +42,9 @@ html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-weight:500;font-size:14px;line-height:1.45;display:flex;flex-direction:column;overflow:hidden;-webkit-text-size-adjust:100%}
 header{position:relative;padding:12px 16px 2px;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 14px}
 h1{font-size:17px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balance;padding-right:86px}
-#unit{flex:1 0 100%;margin:0;font-size:11.5px;font-weight:700;color:var(--muted)}
+#unit{flex:1 0 100%;margin:0;font-size:11.5px;font-weight:700;color:var(--muted);display:flex;gap:12px;align-items:baseline}
+#unit a{color:var(--accent);text-decoration:none;border-bottom:2px solid currentColor;line-height:1.2}
+#unit a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 #fact{flex:1 0 100%;color:var(--muted);font-size:12.5px;margin:0;font-weight:700}
 #fact b{font-size:21px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;display:inline-block}
 #fact b.bump{animation:bump .45s cubic-bezier(.3,1.8,.5,1)}
@@ -54,8 +56,8 @@ h1{font-size:17px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balanc
 #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .lb{position:absolute;left:0;top:0;white-space:nowrap;will-change:transform;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 6px var(--bg)}
 .lb.n{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
-.lb.c{font-size:11.5px;font-weight:800}
-.lb.r{font-size:11.5px;font-weight:800;color:var(--muted)}
+.lb.c{font-size:11.5px;font-weight:800;white-space:pre;text-align:center;line-height:1.2}
+.lb.r{font-size:11.5px;font-weight:800;color:var(--muted);white-space:pre;text-align:right;line-height:1.2}
 #hint{position:absolute;right:12px;top:4px;font-size:10.5px;color:var(--muted);pointer-events:none}
 #detail{padding:5px 16px 7px;min-height:48px}
 #dt{font-size:11.5px;color:var(--muted);margin:0 0 2px;display:flex;gap:8px;align-items:baseline}
@@ -104,12 +106,12 @@ h1{font-size:17px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balanc
 </head>
 <body>
 <header>
-  <h1>世界がもしボールプールだったら</h1>
-  <p id="unit">ボール1個は1000万人</p>
+  <h1>{{TITLE}}</h1>
+  <p id="unit">{{UNIT}}<a href="{{NAV_HREF}}">{{NAV_TEXT}}</a></p>
   <p id="fact"></p>
   <button type="button" id="snd" aria-pressed="true">音 オン</button>
 </header>
-<div id="stage" aria-label="世界の人口をボールで表した立体グラフ">
+<div id="stage" aria-label="{{ARIA}}">
   <canvas id="cv"></canvas>
   <div id="labels"></div>
   <div id="hint">ドラッグで回転・ピンチで拡大・筒をタップ</div>
@@ -128,9 +130,7 @@ h1{font-size:17px;font-weight:800;margin:0;letter-spacing:.01em;text-wrap:balanc
   <div class="row"><span>色</span><div class="seg" id="s-c"></div></div>
   <details id="about">
     <summary>このページについて・出典</summary>
-    <p>世界の人口を、1000万人につき1個のボールに置き換えた実験です。ボール1個の人数はどの年でも同じなので、年によってボールの数が変わります（1950年は249個、2025年は823個、2100年は1018個）。筒の底面積はすべて同じなので、高さがそのまま人数を表し、年どうしでも比べられます。</p>
-    <p>出典：United Nations, DESA, Population Division. <a href="https://population.un.org/wpp/">World Population Prospects 2024</a>（<a href="https://creativecommons.org/licenses/by/3.0/igo/">CC BY 3.0 IGO</a>）。各年7月1日時点の人口で、2025年以降は中位推計です。年齢は3区分に集計しています。所得グループは、同データが採用する世界銀行の分類を、すべての年に当てはめています。ボールの数に丸めているため、各グループの個数には1個程度のずれが出ます。</p>
-    <p>制作：矢崎裕一（Visualizing.JP）</p>
+{{ABOUT}}
   </details>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

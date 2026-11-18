@@ -1,15 +1,11 @@
 (function(){
 "use strict";
-const YEARS=DATA.years, N=DATA.cells[YEARS[0]].length, ABS=90; /* N = most balls any year needs; ABS = ball absent this year */
-const DIMS={
-  reg:{name:"地域",cats:["アジア","アフリカ","ヨーロッパ","中南米","北米","オセアニア"],of:c=>Math.floor(c/15),
-       light:["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#008300"],dark:["#3987e5","#d95926","#199e70","#c98500","#d55181","#0ca30c"]},
-  age:{name:"年齢",cats:["0〜14歳","15〜64歳","65歳以上"],of:c=>Math.floor(c/5)%3,
-       light:["#2a78d6","#eb6834","#1baf7a"],dark:["#3987e5","#d95926","#199e70"]},
-  inc:{name:"所得",cats:["低所得国","下位中所得国","上位中所得国","高所得国","分類なし"],of:c=>c%5,
-       light:["#bcd6f5","#7aaee9","#2f7bd6","#0f3f85","#a9a8a2"],dark:["#1d4a86","#2f74c9","#69a6ee","#c4dcf8","#77766f"]}
-};
-const state={year:2025,x:"reg",z:"none",c:"age",sel:-1};
+/* DATA (balls per year) and CONFIG (what the three dimensions are) come from the page that includes this file */
+const YEARS=DATA.years, N=DATA.cells[YEARS[0]].length, SIZES=DATA.sizes, ABS=SIZES[0]*SIZES[1]*SIZES[2]; /* N = most balls any year needs; ABS = ball absent this year */
+const DIMS={};
+CONFIG.dims.forEach((d,i)=>{const div=SIZES.slice(i+1).reduce((a,b)=>a*b,1),size=SIZES[i];
+  DIMS[d.key]={name:d.name,cats:d.cats,short:d.short||d.cats,light:d.light,dark:d.dark,of:c=>Math.floor(c/div)%size};});
+const state={year:CONFIG.start.year,x:CONFIG.start.x,z:CONFIG.start.z,c:CONFIG.start.c,sel:-1};
 const cells={}; YEARS.forEach(y=>{const s=DATA.cells[y],a=new Uint8Array(N);for(let i=0;i<N;i++)a[i]=s.charCodeAt(i)-33;cells[y]=a;});
 const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches;};
@@ -110,7 +106,7 @@ function step(){
 const PENTA=[261.6,293.7,329.6,392.0,440.0,523.3,587.3,659.3,784.0,880.0,1046.5];
 let ac=null,master=null,sndOn=true,lastV=0,sfxCount=0,unl=null,sndErr=false;
 const SILENT="data:audio/wav;base64,UklGRsQPAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAPAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA";
-try{sndOn=localStorage.getItem("w1000-sound")!=="off";}catch(e){}
+try{sndOn=localStorage.getItem("ballpool-sound")!=="off";}catch(e){}
 let sndTried=false,sndFail=0,sndFailAt=0;
 function ensureAudio(){
   if(!sndOn)return;
@@ -211,8 +207,8 @@ function buildFrame(s,H,nx,nz,pitch){
     if(b.n>0){addLabel("n",String(b.n),b.cx,b.top+0.9,b.cz);labels[labels.length-1].val=b.n;}
   });
   const half=s/2+1.1;
-  if(state.x!=="none")DIMS[state.x].cats.forEach((nm,i)=>addLabel("c",nm,(i-(nx-1)/2)*pitch,-0.2,((nz-1)/2)*pitch+half+0.6));
-  if(state.z!=="none")DIMS[state.z].cats.forEach((nm,i)=>addLabel("r",nm,-((nx-1)/2)*pitch-half-0.4,-0.2,((nz-1)/2-i)*pitch,true));
+  if(state.x!=="none")DIMS[state.x].short.forEach((nm,i)=>addLabel("c",nm,(i-(nx-1)/2)*pitch,-0.2,((nz-1)/2)*pitch+half+0.6));
+  if(state.z!=="none")DIMS[state.z].short.forEach((nm,i)=>addLabel("r",nm,-((nx-1)/2)*pitch-half-0.4,-0.2,((nz-1)/2-i)*pitch,true));
 }
 function addLabel(cls,text,x,y,z,right){const el=document.createElement("div");el.className="lb "+cls;el.textContent=text;labelBox.appendChild(el);labels.push({el,p:new THREE.Vector3(x,y,z),right:!!right,cls});}
 const V=new THREE.Vector3();
@@ -283,9 +279,14 @@ function detail(){
   const ul=document.getElementById("dl");ul.textContent="";
   C.cats.forEach((nm,i)=>{const li=document.createElement("li"),sw=document.createElement("i"),sp=document.createElement("span");sw.style.background=pal[i];sp.textContent=cnt[i];li.append(sw,nm,sp);ul.appendChild(li);});
 }
+function popText(p){ /* 8231612568 -> 82.3億人 ; 123262450 -> 1億2326万人 ; 59736822 -> 5974万人 */
+  if(p>=1e9)return "<b>"+(p/1e8).toFixed(1)+"</b>億人";
+  const man=Math.round(p/1e4),oku=Math.floor(man/1e4),rest=man%1e4;
+  return (oku?"<b>"+oku+"</b>億":"")+"<b>"+rest+"</b>万人";
+}
 function fact(){
-  const k=YEARS.indexOf(state.year),t=DATA.total[k],el=document.getElementById("fact");
-  el.innerHTML="<b>"+state.year+"</b>年　人口 <b>"+(t*10).toFixed(1)+"</b>億人　ボール <b>"+DATA.n[k]+"</b>個";
+  const k=YEARS.indexOf(state.year),el=document.getElementById("fact");
+  el.innerHTML="<b>"+state.year+"</b>年　人口 "+popText(DATA.pop[k])+"　ボール <b>"+DATA.n[k]+"</b>個";
   if(!reduce)el.querySelectorAll("b").forEach((b,n)=>{b.style.animationDelay=(n*70)+"ms";b.classList.add("bump");});
 }
 
@@ -336,7 +337,7 @@ function endDrag(e){
 knob.addEventListener("pointerup",e=>{ensureAudio();endDrag(e);});knob.addEventListener("pointercancel",endDrag);
 knob.addEventListener("keydown",e=>{const i=YEARS.indexOf(state.year),d=(e.key==="ArrowRight"||e.key==="ArrowUp")?1:(e.key==="ArrowLeft"||e.key==="ArrowDown")?-1:0;
   if(d&&YEARS[i+d]){e.preventDefault();apply("year",YEARS[i+d]);}});
-const dimOpts=[["reg","地域"],["age","年齢"],["inc","所得"]];
+const dimOpts=CONFIG.dims.map(d=>[d.key,d.name]);
 seg("s-year",YEARS.map(y=>[y,String(y)]),"year");
 /* one row for both directions: the first choice divides across (横), the second into depth (奥); tap again to remove */
 (function(){const box=document.getElementById("s-split");
@@ -353,7 +354,7 @@ seg("s-c",dimOpts,"c");
 
 const sndBtn=document.getElementById("snd");
 function sndSync(){const b=document.getElementById("snd");b.setAttribute("aria-pressed",String(sndOn));b.textContent=!sndOn?"音 オフ":sndErr?"音 不可":(!sndTried||(ac&&ac.state==="running"))?"音 オン":"音 待機中";}
-sndBtn.addEventListener("click",function(){sndOn=!sndOn;try{localStorage.setItem("w1000-sound",sndOn?"on":"off");}catch(e){}if(sndOn){sndErr=false;ensureAudio();setTimeout(function(){blip(523.3,0.2,0.25);},120);}else if(unl){unl.pause();}sndSync();});
+sndBtn.addEventListener("click",function(){sndOn=!sndOn;try{localStorage.setItem("ballpool-sound",sndOn?"on":"off");}catch(e){}if(sndOn){sndErr=false;ensureAudio();setTimeout(function(){blip(523.3,0.2,0.25);},120);}else if(unl){unl.pause();}sndSync();});
 document.addEventListener("visibilitychange",function(){if(document.hidden){if(unl)unl.pause();}else if(ac&&sndOn&&ac.state!=="running"){ac.resume().then(sndSync,function(){});}});
 document.getElementById("controls").addEventListener("click",ensureAudio,true);
 stage.addEventListener("click",ensureAudio);

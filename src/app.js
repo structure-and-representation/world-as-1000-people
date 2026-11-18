@@ -3,10 +3,16 @@
 /* DATA (balls per year) and CONFIG (what the three dimensions are) come from the page that includes this file */
 const YEARS=DATA.years, N=DATA.cells[YEARS[0]].length, SIZES=DATA.sizes, ABS=SIZES[0]*SIZES[1]*SIZES[2]; /* N = most balls any year needs; ABS = ball absent this year */
 const DIMS={};
-CONFIG.dims.forEach((d,i)=>{const div=SIZES.slice(i+1).reduce((a,b)=>a*b,1),size=SIZES[i];
-  DIMS[d.key]={name:d.name,cats:d.cats,short:d.short||d.cats,light:d.light,dark:d.dark,of:c=>Math.floor(c/div)%size};});
-const state={year:CONFIG.start.year,x:CONFIG.start.x,z:CONFIG.start.z,c:CONFIG.start.c,sel:-1};
-const cells={}; YEARS.forEach(y=>{const s=DATA.cells[y],a=new Uint8Array(N);for(let i=0;i<N;i++)a[i]=s.charCodeAt(i)-33;cells[y]=a;});
+CONFIG.dims.forEach((d,i)=>{const div=SIZES.slice(i+1).reduce((a,b)=>a*b,1),size=SIZES[i],raw=c=>Math.floor(c/div)%size;
+  if(d.group){ /* the data is stored by member (prefecture); the dimension itself is the member's group (region) */
+    const par=d.group.parent;
+    DIMS[d.key]={name:d.name,cats:d.cats,short:d.short||d.cats,light:d.light,dark:d.dark,of:c=>par[raw(c)]};
+    DIMS[d.group.key]={name:d.group.name,cats:d.group.cats,short:d.group.cats,light:d.light,dark:d.dark,of:raw,parent:par};
+  }else DIMS[d.key]={name:d.name,cats:d.cats,short:d.short||d.cats,light:d.light,dark:d.dark,of:raw};});
+const DRILL=CONFIG.dims.find(d=>d.group)||null; /* the dimension whose tubes can be opened ("look inside") */
+/* focus: index of the opened group, or -1. While open, x is the member dimension and only that group's balls are on stage. */
+const state={year:CONFIG.start.year,x:CONFIG.start.x,z:CONFIG.start.z,c:CONFIG.start.c,sel:-1,focus:-1,saved:null};
+const cells={}; YEARS.forEach(y=>{const s=DATA.cells[y],a=new Uint16Array(N);for(let i=0;i<N;i++)a[i]=s.charCodeAt(i)-33;cells[y]=a;});
 const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches;};
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -31,16 +37,24 @@ for(let i=0;i<N*3;i++)jit[i]=(Math.sin(i*12.9898)*43758.5453%1)*0.07;
 let bins=[],labels=[],moving=false,dirty=true,clock=0;
 const cam={az:-0.5,pol:1.12,dist:40,tx:0,ty:5,tz:0, gDist:40,gTy:5, zoom:1};
 
+let xLabels=null,xNames=null,xMembers=null;
+function members(f){const par=DIMS[DRILL.group.key].parent,m=[];par.forEach((r,i)=>{if(r===f)m.push(i);});return m;}
 function catsOf(d){return d==="none"?[null]:DIMS[d].cats.map((_,i)=>i);}
 function layout(mode){
   const first=mode==="first";
-  const cell=cells[state.year],X=catsOf(state.x),Z=catsOf(state.z),nx=X.length,nz=Z.length,C=DIMS[state.c];
+  const F=state.focus,G=F>=0?DIMS[DRILL.group.key]:null,mem=G?members(F):null,pos={};
+  if(mem)mem.forEach((p,i)=>{pos[p]=i;});
+  const cell=cells[state.year],Z=catsOf(state.z),nx=mem?mem.length:catsOf(state.x).length,nz=Z.length,C=DIMS[state.c];
+  xLabels=mem?mem.map(p=>G.short[p]):(state.x==="none"?null:DIMS[state.x].short);
+  xNames=mem?mem.map(p=>G.cats[p]):(state.x==="none"?null:DIMS[state.x].cats);xMembers=mem;
   bins=[];
   for(let zi=0;zi<nz;zi++)for(let xi=0;xi<nx;xi++)bins.push({xi,zi,ids:[],n:0});
-  const binIx=c=>(state.z==="none"?0:DIMS[state.z].of(c))*nx+(state.x==="none"?0:DIMS[state.x].of(c));
-  for(let i=0;i<N;i++){const c=cell[i];if(c>=ABS){binOf[i]=-1;continue;}const b=binIx(c);binOf[i]=b;bins[b].ids.push(i);}
+  const zOf=c=>state.z==="none"?0:DIMS[state.z].of(c);
+  /* -1: this ball is not on stage (it belongs to another group than the opened one) */
+  const binIx=mem?(c=>{const p=G.of(c);return G.parent[p]===F?zOf(c)*nx+pos[p]:-1;}):(c=>zOf(c)*nx+(state.x==="none"?0:DIMS[state.x].of(c)));
+  for(let i=0;i<N;i++){const c=cell[i];if(c>=ABS){binOf[i]=-1;continue;}const b=binIx(c);binOf[i]=b;if(b>=0)bins[b].ids.push(i);}
   /* footprint and frame height come from the largest group in ANY year, so tube heights compare across years */
-  let maxN=1;YEARS.forEach(y=>{const k=new Uint16Array(nx*nz),cy=cells[y];for(let i=0;i<N;i++)if(cy[i]<ABS)k[binIx(cy[i])]++;for(let j=0;j<k.length;j++)if(k[j]>maxN)maxN=k[j];});
+  let maxN=1;YEARS.forEach(y=>{const k=new Uint16Array(nx*nz),cy=cells[y];for(let i=0;i<N;i++)if(cy[i]<ABS){const b=binIx(cy[i]);if(b>=0)k[b]++;}for(let j=0;j<k.length;j++)if(k[j]>maxN)maxN=k[j];});
   const s=(nx*nz===1)?10:Math.max(3,Math.ceil(Math.sqrt(maxN/12)));
   const pitch=s+1.6,H=Math.ceil(maxN/(s*s));
   const now=clock;apexY=H+3;clampR=Math.hypot(nx*pitch,nz*pitch)*0.5+6;
@@ -207,7 +221,7 @@ function buildFrame(s,H,nx,nz,pitch){
     if(b.n>0){addLabel("n",String(b.n),b.cx,b.top+0.9,b.cz);labels[labels.length-1].val=b.n;}
   });
   const half=s/2+1.1;
-  if(state.x!=="none")DIMS[state.x].short.forEach((nm,i)=>addLabel("c",nm,(i-(nx-1)/2)*pitch,-0.2,((nz-1)/2)*pitch+half+0.6));
+  if(xLabels)xLabels.forEach((nm,i)=>addLabel("c",nm,(i-(nx-1)/2)*pitch,-0.2,((nz-1)/2)*pitch+half+0.6));
   if(state.z!=="none")DIMS[state.z].short.forEach((nm,i)=>addLabel("r",nm,-((nx-1)/2)*pitch-half-0.4,-0.2,((nz-1)/2-i)*pitch,true));
 }
 function addLabel(cls,text,x,y,z,right){const el=document.createElement("div");el.className="lb "+cls;el.textContent=text;labelBox.appendChild(el);labels.push({el,p:new THREE.Vector3(x,y,z),right:!!right,cls});}
@@ -271,13 +285,33 @@ function tap(e){
 
 /* ---------- breakdown strip (legend + counts) ---------- */
 function detail(){
-  const C=DIMS[state.c],cell=cells[state.year],pal=isDark()?C.dark:C.light,cnt=C.cats.map(()=>0);let tot=0,title="全体";
-  for(let i=0;i<N;i++){if(cell[i]>=ABS||(state.sel>=0&&binOf[i]!==state.sel))continue;cnt[C.of(cell[i])]++;tot++;}
-  if(state.sel>=0){const b=bins[state.sel],p=[];if(state.x!=="none")p.push(DIMS[state.x].cats[b.xi]);if(state.z!=="none")p.push(DIMS[state.z].cats[b.zi]);title=p.join(" × ")||"全体";}
-  document.getElementById("dt").innerHTML="<b></b><span></span>";
-  document.querySelector("#dt b").textContent=title;document.querySelector("#dt span").textContent=tot+"個の"+C.name+"別内訳";
+  const C=DIMS[state.c],cell=cells[state.year],pal=isDark()?C.dark:C.light,cnt=C.cats.map(()=>0),F=state.focus;
+  let tot=0,title=F>=0?DIMS[DRILL.key].cats[F]:"全体";
+  for(let i=0;i<N;i++){if(cell[i]>=ABS||binOf[i]<0||(state.sel>=0&&binOf[i]!==state.sel))continue;cnt[C.of(cell[i])]++;tot++;}
+  if(state.sel>=0){const b=bins[state.sel],p=[];if(xNames)p.push(xNames[b.xi]);if(state.z!=="none")p.push(DIMS[state.z].cats[b.zi]);title=p.join(" × ")||title;
+    /* a whole prefecture: add its real population, since a few balls are a coarse measure */
+    if(xMembers&&state.z==="none"&&DATA.sub)title+="　"+popText(DATA.sub[state.year][xMembers[b.xi]]).replace(/<[^>]+>/g,"");}
+  const dt=document.getElementById("dt");dt.innerHTML="<b></b><span></span>";
+  dt.querySelector("b").textContent=title;dt.querySelector("span").textContent=tot+"個の"+C.name+"別内訳";
+  if(DRILL){
+    const mk=(txt,fn)=>{const b=document.createElement("button");b.type="button";b.className="mini";b.textContent=txt;b.addEventListener("click",fn);dt.appendChild(b);};
+    if(F>=0)mk("← "+DRILL.group.back,exitFocus);
+    else if(state.sel>=0&&(state.x===DRILL.key||state.z===DRILL.key)){const b=bins[state.sel],r=state.x===DRILL.key?b.xi:b.zi;mk("中を見る",()=>enterFocus(r));}
+  }
   const ul=document.getElementById("dl");ul.textContent="";
   C.cats.forEach((nm,i)=>{const li=document.createElement("li"),sw=document.createElement("i"),sp=document.createElement("span");sw.style.background=pal[i];sp.textContent=cnt[i];li.append(sw,nm,sp);ul.appendChild(li);});
+}
+/* look inside one group: its balls spill and are sorted again by member; the other balls leave the stage */
+function enterFocus(r){
+  if(phase==="spill"||state.focus>=0)return;
+  const other=state.x===DRILL.key?state.z:state.x;
+  state.saved={x:state.x,z:state.z};state.focus=r;state.x=DRILL.group.key;state.z=(other===DRILL.key)?"none":other;
+  sync();fact();startSpill();
+}
+function exitFocus(){
+  if(phase==="spill"||state.focus<0)return;
+  state.focus=-1;state.x=state.saved.x;state.z=state.saved.z;state.saved=null;
+  sync();fact();startSpill();
 }
 function popText(p){ /* 8231612568 -> 82.3億人 ; 123262450 -> 1億2326万人 ; 59736822 -> 5974万人 */
   if(p>=1e9)return "<b>"+(p/1e8).toFixed(1)+"</b>億人";
@@ -285,8 +319,12 @@ function popText(p){ /* 8231612568 -> 82.3億人 ; 123262450 -> 1億2326万人 ;
   return (oku?"<b>"+oku+"</b>億":"")+"<b>"+rest+"</b>万人";
 }
 function fact(){
-  const k=YEARS.indexOf(state.year),el=document.getElementById("fact");
-  el.innerHTML="<b>"+state.year+"</b>年　人口 "+popText(DATA.pop[k])+"　ボール <b>"+DATA.n[k]+"</b>個";
+  const k=YEARS.indexOf(state.year),el=document.getElementById("fact"),F=state.focus;
+  if(F>=0){const G=DIMS[DRILL.group.key],cy=cells[state.year];let n=0,p=0;
+    for(let i=0;i<N;i++)if(cy[i]<ABS&&G.parent[G.of(cy[i])]===F)n++;
+    members(F).forEach(m=>{p+=DATA.sub[state.year][m];});
+    el.innerHTML="<b>"+state.year+"</b>年　"+DIMS[DRILL.key].cats[F]+" "+popText(p)+"　ボール <b>"+n+"</b>個";}
+  else el.innerHTML="<b>"+state.year+"</b>年　人口 "+popText(DATA.pop[k])+"　ボール <b>"+DATA.n[k]+"</b>個";
   if(!reduce)el.querySelectorAll("b").forEach((b,n)=>{b.style.animationDelay=(n*70)+"ms";b.classList.add("bump");});
 }
 
@@ -314,7 +352,9 @@ function placeKnob(){
 }
 function sync(){
   [["s-year","year"],["s-c","c"]].forEach(p=>{document.querySelectorAll("#"+p[0]+" button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===String(state[p[1]]))));});
-  document.querySelectorAll("#s-split button").forEach(b=>{const ax=state.x===b.dataset.v?"横":state.z===b.dataset.v?"奥":"";
+  document.querySelectorAll("#s-split button").forEach(b=>{
+    const open=state.focus>=0&&b.dataset.v===DRILL.key,ax=(open||state.x===b.dataset.v)?"横":state.z===b.dataset.v?"奥":"";
+    b.textContent=open?DRILL.group.name:DIMS[b.dataset.v].name;
     b.setAttribute("aria-pressed",String(!!ax));b.dataset.ax=ax;b.setAttribute("aria-label",b.textContent+(ax?"（"+ax+"に分ける）":"（分けない）"));});
   placeKnob();
 }
@@ -344,6 +384,9 @@ seg("s-year",YEARS.map(y=>[y,String(y)]),"year");
   dimOpts.forEach(o=>{const b=document.createElement("button");b.type="button";b.textContent=o[1];b.dataset.v=o[0];b.id="s-split-"+o[0];
     b.addEventListener("click",()=>{b.classList.remove("pop");void b.offsetWidth;b.classList.add("pop");
       const d=o[0];
+      if(state.focus>=0){ /* while a group is open, across is fixed to its members; only depth can change */
+        if(d===DRILL.key)return;
+        state.z=(state.z===d)?"none":d;sync();if(phase!=="spill")startSpill();return;}
       if(state.x===d){state.x=state.z;state.z="none";}
       else if(state.z===d){state.z="none";}
       else if(state.x==="none"){state.x=d;}

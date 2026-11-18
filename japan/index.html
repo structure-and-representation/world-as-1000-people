@@ -225,15 +225,31 @@ function layout(mode){
   moving=!(first||reduce);
   if(!moving)writeAll();
   buildFrame(s,H,nx,nz,pitch);
-  ext=[nx*pitch,nz*pitch,H];cam.zoom=1;fit(first||reduce);
+  ext=[nx*pitch,nz*pitch,H,Math.max.apply(null,bins.map(b=>b.top)),s];cam.zoom=1;fit(first||reduce);
   state.sel=-1;paint();detail();dirty=true;
 }
 const M=new THREE.Matrix4();
-let ext=[10,10,10];
+let ext=[10,10,10,10,10];
+/* Frame the picture by projecting the corners of what must be visible, for the current view angle.
+   Distance: the whole frame (tubes at their tallest in any year, plus the labels around them) fits,
+   so it does not change from year to year. Height: what is on stage now sits a little above the middle. */
+const fitCam=new THREE.PerspectiveCamera(32,1,0.1,500),FV=new THREE.Vector3();
 function fit(snap){
-  const W=ext[0],D=ext[1],H=ext[2],R=0.5*Math.sqrt(W*W+D*D+H*H);
-  const a=stage.clientWidth/Math.max(1,stage.clientHeight),hv=THREE.MathUtils.degToRad(camera.fov/2),hh=Math.atan(Math.tan(hv)*a);
-  cam.gDist=R/Math.sin(Math.min(hv,hh))*(state.z==="none"?1.04:1.17);cam.gTy=H*0.42;
+  const W=ext[0],D=ext[1],H=ext[2],top=ext[3],s=ext[4],hv=Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+  const x0=-W/2-(state.z==="none"?0.6:s*0.5+3.2),x1=W/2+0.6,z0=-D/2-0.4,z1=D/2+(xLabels?3.2:0.8),yb=-1.6;
+  const box=yt=>{const p=[];[x0,x1].forEach(x=>[yb,yt].forEach(y=>[z0,z1].forEach(z=>p.push([x,y,z]))));return p;};
+  const full=box(H+0.4),now=box(Math.max(top+2.2,2.5));
+  fitCam.fov=camera.fov;fitCam.aspect=camera.aspect;fitCam.updateProjectionMatrix();
+  const span=(dist,ty,pts)=>{const sp=Math.sin(cam.pol);
+    fitCam.position.set(dist*Math.sin(cam.az)*sp,ty+dist*Math.cos(cam.pol),dist*Math.cos(cam.az)*sp);fitCam.lookAt(0,ty,0);fitCam.updateMatrixWorld(true);
+    let mx=0,lo=1e9,hi=-1e9;pts.forEach(q=>{FV.set(q[0],q[1],q[2]).project(fitCam);mx=Math.max(mx,Math.abs(FV.x));lo=Math.min(lo,FV.y);hi=Math.max(hi,FV.y);});return [mx,lo,hi];};
+  let ty=H*0.4,lo=4,hi=600;
+  for(let k=0;k<22;k++){const d=(lo+hi)/2,r=span(d,ty,full);if(r[0]<=0.94&&r[2]-r[1]<=1.84)hi=d;else lo=d;}
+  const dist=hi;
+  for(let k=0;k<4;k++){const r=span(dist,ty,now);ty+=((r[1]+r[2])/2-0.06)*dist*hv;}     /* current content slightly above centre */
+  for(let k=0;k<3;k++){const r=span(dist,ty,full);                                      /* but keep the floor and labels in view */
+    if(r[1]<-0.95)ty-=(-0.95-r[1])*dist*hv;else if(r[2]>0.98&&r[2]-r[1]<=1.93)ty+=(r[2]-0.98)*dist*hv;}
+  cam.gDist=dist;cam.gTy=ty;
   if(snap){cam.dist=cam.gDist;cam.ty=cam.gTy;}
 }
 function writeAll(){for(let i=0;i<N;i++){const k=sc[i];M.makeScale(k,k,k);M.setPosition(cur[i*3],cur[i*3+1],cur[i*3+2]);balls.setMatrixAt(i,M);}balls.instanceMatrix.needsUpdate=true;}
